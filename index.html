@@ -168,14 +168,11 @@
                 logout();
             } else {
                 adminPass = prompt("Enter Admin Password:");
-                // Replace 'your_password_here' with the same password you put in Render
-                if (adminPass === "your_password_here") { 
+                if (adminPass) {
                     isAdmin = true;
                     document.getElementById('admin-panel').style.display = 'block';
                     document.getElementById('auth-btn').innerText = 'Logout';
                     renderLinks();
-                } else {
-                    alert("Incorrect Password!");
                 }
             }
         }
