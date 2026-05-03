@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Hub</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --dark: #1e293b;
+            --light: #f8fafc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light);
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* Top Bar & Login */
+        .header {
+            display: flex;
+            justify-content: flex-end;
+            padding: 10px;
+        }
+
+        .btn-login {
+            background: var(--dark);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Content Area */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .links-grid {
+            display: grid;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .project-link {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+
+        .project-link:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Admin Panel */
+        #admin-panel {
+            display: none;
+            background: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 2px dashed var(--primary);
+        }
+
+        .admin-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .btn-add { background: #22c55e; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; }
+        .btn-remove { background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        .logout { background: #64748b; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <button id="auth-btn" class="btn-login" onclick="handleAuthAction()">Admin Login</button>
+    </div>
+
+    <div class="container">
+        <h1>My Projects</h1>
+
+        <!-- Admin Panel Section -->
+        <div id="admin-panel">
+            <h3>Admin Control Panel</h3>
+            <div class="admin-controls">
+                <input type="text" id="link-name" placeholder="Project Name">
+                <input type="text" id="link-url" placeholder="https://...">
+                <button class="btn-add" onclick="addLink()">Add Link</button>
+            </div>
+            <button class="btn-login logout" onclick="logout()">Logout</button>
+        </div>
+
+        <!-- Public View -->
+        <div id="links-display" class="links-grid">
+            <!-- Links will appear here -->
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const ADMIN_CONFIG = {
+            username: "admin",
+            password: "password123" // Change this!
+        };
+
+        let isAdmin = false;
+        let projects = JSON.parse(localStorage.getItem('myProjects')) || [
+            { name: "Default Project", url: "https://github.com" }
+        ];
+
+        // Initialize view
+        renderLinks();
+
+        function handleAuthAction() {
+            if (isAdmin) {
+                logout();
+            } else {
+                const user = prompt("Username:");
+                const pass = prompt("Password:");
+
+                if (user === ADMIN_CONFIG.username && pass === ADMIN_CONFIG.password) {
+                    isAdmin = true;
+                    document.getElementById('admin-panel').style.display = 'block';
+                    document.getElementById('auth-btn').innerText = 'Logout';
+                    renderLinks();
+                } else {
+                    alert("Access Denied");
+                }
+            }
+        }
+
+        function logout() {
+            isAdmin = false;
+            document.getElementById('admin-panel').style.display = 'none';
+            document.getElementById('auth-btn').innerText = 'Admin Login';
+            renderLinks();
+        }
+
+        function addLink() {
+            const name = document.getElementById('link-name').value;
+            const url = document.getElementById('link-url').value;
+
+            if (name && url) {
+                projects.push({ name, url });
+                saveAndRefresh();
+                document.getElementById('link-name').value = '';
+                document.getElementById('link-url').value = '';
+            }
+        }
+
+        function removeLink(index) {
+            projects.splice(index, 1);
+            saveAndRefresh();
+        }
+
+        function saveAndRefresh() {
+            localStorage.setItem('myProjects', JSON.stringify(projects));
+            renderLinks();
+        }
+
+        function renderLinks() {
+            const container = document.getElementById('links-display');
+            container.innerHTML = '';
+
+            projects.forEach((proj, index) => {
+                const linkWrap = document.createElement('div');
+                linkWrap.className = 'project-link-container';
+                
+                let html = `
+                    <div class="project-link">
+                        <a href="${proj.url}" target="_blank" style="text-decoration:none; color:inherit;">${proj.name}</a>
+                `;
+
+                if (isAdmin) {
+                    html += `<button class="btn-remove" onclick="removeLink(${index})">Delete</button>`;
+                }
+
+                html += `</div>`;
+                linkWrap.innerHTML = html;
+                container.appendChild(linkWrap);
+            });
+        }
+    </script>
+</body>
+</html>
