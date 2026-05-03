@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Hub</title>
+    <title>Project Hub | BBB Pages</title>
     <style>
         :root {
             --primary: #2563eb;
@@ -115,94 +115,121 @@
 
         <!-- Public View -->
         <div id="links-display" class="links-grid">
-            <!-- Links will appear here -->
+            <p>Loading projects...</p>
         </div>
     </div>
 
     <script>
-        // --- CONFIGURATION ---
-        const ADMIN_CONFIG = {
-            username: "tnt48481331",
-            password: "hyprland" // Change this!
-        };
-
+        // --- API CONFIGURATION ---
+        // This is your live Render URL from your screenshot (image_5bb0dc.png)
+        const API_URL = "https://bbb-api-jdji.onrender.com"; 
+        
         let isAdmin = false;
-        let projects = JSON.parse(localStorage.getItem('myProjects')) || [
-            { name: "Default Project", url: "https://github.com" }
-        ];
+        let adminPass = "";
 
-        // Initialize view
-        renderLinks();
+        // 1. Load links from the database
+        async function renderLinks() {
+            try {
+                const res = await fetch(`${API_URL}/links`);
+                const projects = await res.json();
+                const container = document.getElementById('links-display');
+                
+                if (projects.length === 0) {
+                    container.innerHTML = '<p>No projects added yet.</p>';
+                    return;
+                }
 
+                container.innerHTML = '';
+                projects.forEach((proj) => {
+                    const linkWrap = document.createElement('div');
+                    
+                    let html = `
+                        <div class="project-link">
+                            <a href="${proj.url}" target="_blank" style="text-decoration:none; color:inherit;">${proj.name}</a>
+                    `;
+
+                    if (isAdmin) {
+                        html += `<button class="btn-remove" onclick="removeLink(${proj.id})">Delete</button>`;
+                    }
+
+                    html += `</div>`;
+                    linkWrap.innerHTML = html;
+                    container.appendChild(linkWrap);
+                });
+            } catch (err) {
+                document.getElementById('links-display').innerHTML = '<p style="color:red;">Error connecting to API. Is Render awake?</p>';
+                console.error("Database connection failed:", err);
+            }
+        }
+
+        // 2. Handle Admin Login
         function handleAuthAction() {
             if (isAdmin) {
                 logout();
             } else {
-                const user = prompt("Username:");
-                const pass = prompt("Password:");
-
-                if (user === ADMIN_CONFIG.username && pass === ADMIN_CONFIG.password) {
+                adminPass = prompt("Enter Admin Password:");
+                if (adminPass) {
+                    // Password validation happens on the server side when you try to Add/Delete
                     isAdmin = true;
                     document.getElementById('admin-panel').style.display = 'block';
                     document.getElementById('auth-btn').innerText = 'Logout';
                     renderLinks();
-                } else {
-                    alert("Access Denied");
                 }
             }
         }
 
         function logout() {
             isAdmin = false;
+            adminPass = "";
             document.getElementById('admin-panel').style.display = 'none';
             document.getElementById('auth-btn').innerText = 'Admin Login';
             renderLinks();
         }
 
-        function addLink() {
+        // 3. Add link to Database via Render
+        async function addLink() {
             const name = document.getElementById('link-name').value;
             const url = document.getElementById('link-url').value;
 
-            if (name && url) {
-                projects.push({ name, url });
-                saveAndRefresh();
+            if (!name || !url) {
+                alert("Please fill in both fields");
+                return;
+            }
+
+            const response = await fetch(`${API_URL}/links`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name, url, password: adminPass })
+            });
+
+            if (response.ok) {
                 document.getElementById('link-name').value = '';
                 document.getElementById('link-url').value = '';
+                renderLinks();
+            } else {
+                alert("Failed to add link. Check your ADMIN_PASSWORD on Render.");
             }
         }
 
-        function removeLink(index) {
-            projects.splice(index, 1);
-            saveAndRefresh();
-        }
+        // 4. Remove link from Database via Render
+        async function removeLink(id) {
+            if (!confirm("Are you sure you want to delete this project?")) return;
 
-        function saveAndRefresh() {
-            localStorage.setItem('myProjects', JSON.stringify(projects));
-            renderLinks();
-        }
-
-        function renderLinks() {
-            const container = document.getElementById('links-display');
-            container.innerHTML = '';
-
-            projects.forEach((proj, index) => {
-                const linkWrap = document.createElement('div');
-                linkWrap.className = 'project-link-container';
-                
-                let html = `
-                    <div class="project-link">
-                        <a href="${proj.url}" target="_blank" style="text-decoration:none; color:inherit;">${proj.name}</a>
-                `;
-
-                if (isAdmin) {
-                    html += `<button class="btn-remove" onclick="removeLink(${index})">Delete</button>`;
-                }
-
-                html += `</div>`;
-                linkWrap.innerHTML = html;
-                container.appendChild(linkWrap);
+            const response = await fetch(`${API_URL}/links/${id}`, {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ password: adminPass })
             });
+
+            if (response.ok) {
+                renderLinks();
+            } else {
+                alert("Failed to delete. Access denied.");
+            }
         }
+
+        // Start by showing the links
+        renderLinks();
     </script>
 </body>
 </html>
