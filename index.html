@@ -168,12 +168,14 @@
                 logout();
             } else {
                 adminPass = prompt("Enter Admin Password:");
-                if (adminPass) {
-                    // Password validation happens on the server side when you try to Add/Delete
+                // Replace 'your_password_here' with the same password you put in Render
+                if (adminPass === "your_password_here") { 
                     isAdmin = true;
                     document.getElementById('admin-panel').style.display = 'block';
                     document.getElementById('auth-btn').innerText = 'Logout';
                     renderLinks();
+                } else {
+                    alert("Incorrect Password!");
                 }
             }
         }
